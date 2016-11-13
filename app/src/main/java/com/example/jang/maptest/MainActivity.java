@@ -2,6 +2,7 @@ package com.example.jang.maptest;
 
 import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.icu.text.SimpleDateFormat;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 
@@ -46,6 +47,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import com.example.jang.maptest.helper.RequestCapture;
+
 public class MainActivity extends Activity implements
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, OnMapReadyCallback {
 
@@ -54,6 +57,8 @@ public class MainActivity extends Activity implements
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private static final int REQUEST_CODE_LOCATION = 2;
+    private double locationX;
+    private double locationY;
 
     private GoogleMap googleMap;
 
@@ -183,13 +188,66 @@ public class MainActivity extends Activity implements
     @Override
     public void onLocationChanged(Location location) {
         LatLng CURRENT_LOCATION = new LatLng(location.getLatitude(), location.getLongitude());
+        locationX = location.getLatitude();
+        locationY = location.getLongitude();
+
+        Log.d(TAG, "location changed x = " + locationX + ", y = " + locationY);
         googleMap.clear();
         Marker seoul = googleMap.addMarker(new MarkerOptions().position(CURRENT_LOCATION)
                 .title("Seoul"));
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(CURRENT_LOCATION, 15));
 
+        updateEvent("MOVING_START");
     }
 
+    private void updateEvent(String event) {
+        RequestCapture epcis = new RequestCapture();
+
+        String eventDate = new java.text.SimpleDateFormat("yyyy-MM-dd").format((System.currentTimeMillis()));
+        String eventTime = new java.text.SimpleDateFormat("HH:mm:ss").format((System.currentTimeMillis()));
+
+        Log.d(TAG, "updateEvent");
+
+        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
+                "<!DOCTYPE project>\n" +
+                "<epcis:EPCISDocument xmlns:epcis=\"urn:epcglobal:epcis:xsd:1\" \n" +
+                "                     schemaVersion=\"1.2\" creationDate=\"2016-11-13T11:30:47.0Z\">\n" +
+                "  <EPCISBody>\n" +
+                "    <EventList>\n" +
+                "      <ObjectEvent>\n" +
+                "        <!-- When -->\n" +
+                "        <eventTime>" + eventDate + "T" + eventTime + ".116-10:00</eventTime>\n" +
+                "        <eventTimeZoneOffset>-10:00</eventTimeZoneOffset>\n" +
+                "        <!-- When! -->\n" +
+                "\n" +
+                "        <!--  What -->\n" +
+                "        <epcList>\n" +
+                "          <epc>urn:epc:id:sgtin:0614141.112345.12345</epc>\n" +
+                "        </epcList>\n" +
+                "        <!-- What!-->\n" +
+                "\n" +
+                "        <!-- Add, Observe, Delete -->\n" +
+                "        <action>ADD</action>\n" +
+                "\n" +
+                "        <!-- Why -->\n" +
+                "        <bizStep>urn:epcglobal:cbv:bizstep:"+ event +"</bizStep>\n" +
+                "        <disposition>urn:epcglobal:cbv:disp:user_accessible</disposition>\n" +
+                "        <!-- Why! -->\n" +
+                "\n" +
+                "        <!-- Where -->\n" +
+                "        <bizLocation>\n" +
+                "          <id>urn:epc:id:sgln:7654321.54321.1234</id>\n" +
+                "          <extension>\n" +
+                "            <geo>" + locationX + "," + locationY + "</geo>\n" +
+                "          </extension>\n" +
+                "        </bizLocation>\n" +
+                "        <!-- Where! -->\n" +
+                "      </ObjectEvent>\n" +
+                "    </EventList>\n" +
+                "  </EPCISBody>\n" +
+                "</epcis:EPCISDocument>";
+        epcis.execute(xml);
+    }
     /**
      * Requests location updates from the FusedLocationApi.
      */
@@ -208,6 +266,7 @@ public class MainActivity extends Activity implements
         }
         LocationAvailability locationAvailability = LocationServices.FusedLocationApi.getLocationAvailability(mGoogleApiClient);
         if (locationAvailability.isLocationAvailable()) {
+            Log.d(TAG, "Start Location update");
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
         } else {
             Toast.makeText(this,"Location Unavialable",Toast.LENGTH_LONG).show();
