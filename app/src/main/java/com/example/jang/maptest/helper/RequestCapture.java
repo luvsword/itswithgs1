@@ -34,9 +34,9 @@ import com.example.jang.maptest.App.AppConfig;
 public class RequestCapture extends AsyncTask<String, Void, String>{
 
     static OkHttpClient client = new OkHttpClient();
-    static String url = AppConfig.EPCIS_SERVER;
+    static String url = AppConfig.EPCIS_SERVER_CAPTURE;
     public static final MediaType mediaType = MediaType.parse("application/xml; charset=utf-8");
-
+    private static final String TAG = "RequestCapture";
     @Override
     protected String doInBackground(String... params) {
 
@@ -53,12 +53,13 @@ public class RequestCapture extends AsyncTask<String, Void, String>{
         } catch (IOException e) {
             e.printStackTrace();
         }
+        Log.i(TAG, "doInBackground end");
         return null;
     }
 
     @Override
     protected void onPostExecute(String result) {
-        Log.i("result", result);
+        Log.i(TAG, "result = " + result);
         return ;
     }
 }

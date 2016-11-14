@@ -48,6 +48,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import com.example.jang.maptest.helper.RequestCapture;
+import com.example.jang.maptest.helper.RequestQuery;
 
 public class MainActivity extends Activity implements
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, OnMapReadyCallback {
@@ -197,9 +198,15 @@ public class MainActivity extends Activity implements
                 .title("Seoul"));
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(CURRENT_LOCATION, 15));
 
-        updateEvent("MOVING_START");
+//        queryEvent();
+       updateEvent("MOVING_START");
     }
 
+    private void queryEvent() {
+        RequestQuery epcis = new RequestQuery();
+
+        epcis.execute();
+    }
     private void updateEvent(String event) {
         RequestCapture epcis = new RequestCapture();
 
