@@ -24,6 +24,7 @@ public class RequestQuery  extends AsyncTask<String, Void, String> {
     public static final MediaType mediaType = MediaType.parse("application/xml; charset=utf-8");
     private static final String TAG = "RequestQuery";
 
+    private static String var1 = "TEST";
     @Override
     protected String doInBackground(String... params) {
 
