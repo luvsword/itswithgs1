@@ -5,13 +5,15 @@ android {
     buildToolsVersion "24.0.3"
     defaultConfig {
         applicationId "com.example.jang.maptest"
-        minSdkVersion 21
+        minSdkVersion 14
         targetSdkVersion 24
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }
+
+
     buildTypes {
         release {
             minifyEnabled false

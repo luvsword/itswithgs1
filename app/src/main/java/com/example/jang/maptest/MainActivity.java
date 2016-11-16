@@ -6,6 +6,7 @@ import android.icu.text.SimpleDateFormat;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 
+import com.example.jang.maptest.helper.MarkerItem;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
@@ -31,6 +32,8 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -49,9 +52,38 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import com.example.jang.maptest.helper.RequestCapture;
 import com.example.jang.maptest.helper.RequestQuery;
+import com.google.android.gms.vision.text.Text;
+
+import java.util.ArrayList;
+
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.util.DisplayMetrics;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+
+import java.text.NumberFormat;
+import java.util.ArrayList;
 
 public class MainActivity extends Activity implements
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, OnMapReadyCallback {
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, OnMapReadyCallback,GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener {
 
     static final LatLng SEOUL = new LatLng(37.56, 126.97);
     private static final String TAG = "@@@";
@@ -62,6 +94,10 @@ public class MainActivity extends Activity implements
     private double locationY;
 
     private GoogleMap googleMap;
+
+    private ArrayList<MarkerItem> ambulance;        //marker
+    private TextView tv_marker;
+    private  View marker_root_view;
 
     @Override
     public void onMapReady(final GoogleMap map) {
@@ -83,9 +119,18 @@ public class MainActivity extends Activity implements
         Marker seoul = googleMap.addMarker(new MarkerOptions().position(SEOUL)
                 .title("Seoul"));
 
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom( SEOUL, 15));
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom( SEOUL, 5));
 
-        googleMap.animateCamera(CameraUpdateFactory.zoomTo(10), 2000, null);
+        googleMap.animateCamera(CameraUpdateFactory.zoomTo(5), 2000, null);
+
+        googleMap.setOnMarkerClickListener(this);
+        googleMap.setOnMapClickListener(this);
+
+        googleMap.addMarker(new MarkerOptions().position(new LatLng(37.48372341039549 , 127.04207226634026))
+        .title("ambulance"));
+
+        setCustomMarkerView();
+        getSampleMarkerItems();
     }
 
     @Override
@@ -103,6 +148,7 @@ public class MainActivity extends Activity implements
         MapFragment mapFragment = (MapFragment) getFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
 
 
     }
@@ -159,7 +205,7 @@ public class MainActivity extends Activity implements
                     REQUEST_CODE_LOCATION);
             return;
         }
-        ;
+
     }
 
     @Override
@@ -195,8 +241,17 @@ public class MainActivity extends Activity implements
         Log.d(TAG, "location changed x = " + locationX + ", y = " + locationY);
         googleMap.clear();
         Marker seoul = googleMap.addMarker(new MarkerOptions().position(CURRENT_LOCATION)
-                .title("Seoul"));
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(CURRENT_LOCATION, 15));
+                .title("사용자 위치"));
+
+        googleMap.addMarker(new MarkerOptions().position(new LatLng(37.48372341039549 , 127.04207226634026))
+                .title("ambulance"));
+
+
+
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(CURRENT_LOCATION, 16));
+
+        setCustomMarkerView();
+        getSampleMarkerItems();
 
 //        queryEvent();
        updateEvent("MOVING_START");
@@ -283,7 +338,111 @@ public class MainActivity extends Activity implements
     }
 
 
+    /**마커**/
 
+    private void getSampleMarkerItems(){                                    //마커 표시할 부분
+        ambulance = new ArrayList();
+        //매봉역
+        ambulance.add(new MarkerItem(37.48372341039549 , 127.04207226634026, "응급차"));
+//        ambulance.add(new MarkerItem(locationX, locationY, "현재위치"));
+        for (MarkerItem markerItem : ambulance) {
+            addMarker(markerItem, false);
+        }
+    }
+    private void setCustomMarkerView() {
+
+        marker_root_view = LayoutInflater.from(this).inflate(R.layout.marker_layout, null);
+        tv_marker = (TextView) marker_root_view.findViewById(R.id.tv_marker);
+    }
+
+
+    private Marker addMarker(MarkerItem markerItem, boolean isSelectedMarker) {
+
+
+        LatLng position = new LatLng(markerItem.getLat(), markerItem.getLon());
+        String destination= markerItem.getDestination();
+//        String formatted = NumberFormat.getCurrencyInstance().format((destination));
+
+        tv_marker.setText(destination);
+
+//        if (isSelectedMarker) {
+//            tv_marker.setBackgroundResource(R.drawable.ic_marker_phone_blue);
+//            tv_marker.setTextColor(Color.WHITE);
+//        } else {
+//            tv_marker.setBackgroundResource(R.drawable.ic_marker_phone);
+//            tv_marker.setTextColor(Color.BLACK);
+//        }
+
+        MarkerOptions markerOptions = new MarkerOptions();
+        markerOptions.title(destination);
+        markerOptions.position(position);
+        markerOptions.icon(BitmapDescriptorFactory.fromBitmap(createDrawableFromView(this, marker_root_view)));
+
+
+        return googleMap.addMarker(markerOptions);
+
+    }
+
+
+
+    // View를 Bitmap으로 변환
+    private Bitmap createDrawableFromView(Context context, View view) {
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        ((Activity) context).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        view.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        view.measure(displayMetrics.widthPixels, displayMetrics.heightPixels);
+        view.layout(0, 0, displayMetrics.widthPixels, displayMetrics.heightPixels);
+        view.buildDrawingCache();
+        Bitmap bitmap = Bitmap.createBitmap(view.getMeasuredWidth(), view.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+
+        Canvas canvas = new Canvas(bitmap);
+        view.draw(canvas);
+
+        return bitmap;
+    }
+
+
+    /**마커 클릭했을 때 이미지 바꿔주는 것**/
+//    private Marker addMarker(Marker marker, boolean isSelectedMarker) {
+//        double lat = marker.getPosition().latitude;
+//        double lon = marker.getPosition().longitude;
+//        MarkerItem temp = new MarkerItem(lat, lon, "현재위치");     //클릭했을 때 어떤 String으로 나오게 할 것인가??
+//        return addMarker(temp, isSelectedMarker);
+//
+//    }
+//
+//    private void changeSelectedMarker(Marker marker) {
+//        // 선택했던 마커 되돌리기
+//        if (marker != null) {
+//            addMarker(marker, false);
+//            marker.remove();
+//        }
+//
+//        // 선택한 마커 표시
+//        if (marker != null) {
+//            marker = addMarker(marker, true);
+//            marker.remove();
+//        }
+//
+//
+//    }
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+        /**마커 클릭했을 때 이미지 바꿔주는 것**/
+//        changeSelectedMarker(null);
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        CameraUpdate center = CameraUpdateFactory.newLatLng(marker.getPosition());
+        googleMap.animateCamera(center);
+        /**마커 클릭했을 때 이미지 바꿔주는 것**/
+//        changeSelectedMarker(marker);
+
+        return true;
+    }
 }
 
 
